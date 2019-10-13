@@ -1,0 +1,27 @@
+{
+  "name": "@realmjs/account-client",
+  "version": "1.0.0",
+  "description": "Client side scripts to authenticate with @realmjs/account-restapi",
+  "main": "src/account.js",
+  "scripts": {
+    "start": "webpack-dev-server --config webpack.dev.config.js  --port 3200 --host 0.0.0.0 --watch-poll"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realmjs/account-client.git"
+  },
+  "author": "duongtdn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/realmjs/account-client/issues"
+  },
+  "homepage": "https://github.com/realmjs/account-client#readme",
+  "dependencies": {
+    "@realmjs/xhttp-request": "^1.2.1"
+  },
+  "devDependencies": {
+    "webpack": "^4.41.1",
+    "webpack-cli": "^3.3.9",
+    "webpack-dev-server": "^3.8.2"
+  }
+}
