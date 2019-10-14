@@ -122,7 +122,7 @@ export default class AccountClient {
       this._setTimeout(done, reject)
       this.iframe.open({
         path: '/form',
-        query: { name: 'signin', app: this.get('app') },
+        query: { name: 'signin', app: this.get('app'), height: 415 },
         props: { display: 'block' },
         onLoaded: () => this._clearTimeout(),
         done: (data) => {
