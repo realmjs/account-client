@@ -32,9 +32,9 @@ const acc = new AccountClient({
 })
 
 acc
-  .on('authenticating', () => console.log('authenticating...'))
-  .on('authenticated', user => console.log(`authenticated: user: ${user}`))
-  .on('unauthenticated', () => console.log('unauthenticated'))
+  .on('authenticating', () => { console.log('--> authenticating...'); updateUserInfo(null); })
+  .on('authenticated', user => { console.log(`--> authenticated: user: ${user}`); updateUserInfo(user); })
+  .on('unauthenticated', () => { console.log('--> unauthenticated'); updateUserInfo(undefined); })
 
 document.addEventListener("DOMContentLoaded", (event) => {
   const btn = ['sso', 'lso', 'signup', 'signin', 'signout']
@@ -47,4 +47,9 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
 function $(id) {
   return document.getElementById(id)
+}
+
+function updateUserInfo(user) {
+  $("user.fullName").innerHTML = user && user.profile.fullName || 'No signed in user'
+  $("user.email").innerHTML = user && user.profile.email[0] || ''
 }
