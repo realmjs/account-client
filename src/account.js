@@ -79,6 +79,12 @@ export default class AccountClient {
               resolve(undefined)
               return
             }
+          } else if (data && data.status) {
+            done && done(data.status)
+            reject(data.status)
+          } else {
+            done && done(data)
+            reject(data)
           }
         }
       })
@@ -227,7 +233,6 @@ export default class AccountClient {
   }
 
   _setTimeout(done, reject) {
-    // TImeout code: 503 Service Unavailable
     const timeout = this.get('timeout') || 2000
     this._to = setTimeout(() => {
       this.iframe.close()
