@@ -20,7 +20,7 @@ export default class AccountClient {
     this.iframe = new Iframe({ baseurl: this._props.baseurl })
     this._eventHandlers = {}
     /* in case these methods are called by an event such as onClick, need to remain 'this' context */
-    const fn = ['sso', 'lso', 'signup', 'signin', 'signout', 'signoutLocally']
+    const fn = ['sso', 'signinLocally', 'signup', 'signin', 'signout', 'signoutLocally']
     fn.forEach(method => this[method] = this[method].bind(this))
   }
 
@@ -172,7 +172,7 @@ export default class AccountClient {
     return this
   }
 
-  lso(done) {
+  signinLocally(done) {
     return new Promise( (resolve, reject) => {
       if (typeof(Storage) === "undefined") {
         // Sorry! No Web Storage support..
@@ -183,7 +183,7 @@ export default class AccountClient {
       if (session && session.user && session.token) {
         this.set({ ...session })
         this.emit('authenticated', session.user)
-        done && done(null, session.user)
+        done && done(200, session.user)
         resolve(session.user)
       } else {
         this.emit('unauthenticated')
