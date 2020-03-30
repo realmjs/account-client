@@ -4,6 +4,7 @@ import { isObject } from './util'
 import Iframe from './iframe'
 
 const SESSION = '__r_s_sess_'
+const TIMEOUT = 30000
 
 export default class AccountClient {
   constructor(props) {
@@ -74,7 +75,7 @@ export default class AccountClient {
             }
             if (data.session === null) {
               this.signoutLocally()
-              done && done(null, undefined)
+              done && done(404, undefined)
               resolve(undefined)
               return
             }
@@ -82,7 +83,8 @@ export default class AccountClient {
             done && done(data.status)
             reject(data.status)
           } else {
-            done && done(data)
+            const error = data;
+            done && done(error)
             reject(data)
           }
         }
@@ -232,7 +234,7 @@ export default class AccountClient {
   }
 
   _setTimeout(done, reject) {
-    const timeout = this.get('timeout') || 2000
+    const timeout = this.get('timeout') || TIMEOUT
     this._to = setTimeout(() => {
       this.iframe.close()
       done && done('503 Request Timeout. No response from the server', null)
