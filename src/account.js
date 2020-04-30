@@ -185,11 +185,11 @@ export default class AccountClient {
       if (session && session.user && session.token) {
         this.set({ ...session })
         this.emit('authenticated', session.user)
-        done && done(200, session.user)
+        done && done(null, session.user)
         resolve(session.user)
       } else {
         this.emit('unauthenticated')
-        done && done(null, undefined)
+        done && done(404, undefined)
         resolve(undefined)
       }
     })
