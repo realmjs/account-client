@@ -3,7 +3,7 @@
 const path = require("path")
 
 module.exports = {
-    entry: ["./example/app.js"],
+    entry: ["./demo/app.js"],
     output: {
       filename: "app.bundle.js",
     },
@@ -19,7 +19,7 @@ module.exports = {
     mode: 'development',
     devtool: 'inline-source-map',
     devServer: {
-      contentBase: path.join(__dirname, 'example'),
+      contentBase: path.join(__dirname, 'demo'),
       publicPath: "/assets/",
       historyApiFallback: true,
       port: 3200,
