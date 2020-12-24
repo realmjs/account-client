@@ -80,8 +80,8 @@ export default class AccountClient {
               return
             }
           } else if (data && data.status) {
-            done && done(data.status)
-            reject(data.status)
+            done && done(data)
+            reject(data)
           } else {
             const error = data;
             done && done(error)
