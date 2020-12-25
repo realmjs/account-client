@@ -3,7 +3,11 @@
 import { isObject, isFunction } from './util'
 
 export default class Iframe {
-  constructor({ baseurl }) {
+  constructor(props) {
+    if (!(props && props.baseurl)) {
+      throw new Error('Iframe instance requires baseurl!');
+    }
+    const { baseurl } = props;
     this.baseurl = baseurl.replace(/\/+$/,'')
     this._lazyFn = []
     this._done = null
