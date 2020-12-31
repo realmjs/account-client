@@ -34,6 +34,7 @@ export default class Iframe {
       /* iframe close command */
       if (data.code === 'iframe.close') {
         this._closeIframe()
+        this._done(data);
         return
       }
       /* iframe finish all processing */
