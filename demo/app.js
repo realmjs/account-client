@@ -28,8 +28,9 @@ import AccountClient from '../src/account'
 
 const acc = new AccountClient({
   app: 'dev',
-  baseurl: 'http://localhost:3100'
-})
+  baseurl: 'http://localhost:3100',
+  session: '_r_s_sess_',
+});
 
 acc
   .on('authenticating', () => { console.log('--> authenticating...'); updateUserInfo(null); })
@@ -37,19 +38,19 @@ acc
   .on('unauthenticated', () => { console.log('--> unauthenticated'); updateUserInfo(undefined); })
 
 document.addEventListener("DOMContentLoaded", (event) => {
-  const btn = ['sso', 'lso', 'signup', 'signin', 'signout']
+  const btn = ['sso', 'lso', 'signup', 'signin', 'signout'];
   btn.forEach( fn => $(fn).onclick = function() {
     acc[fn](done[fn])
     .then(user => console.log(`${fn.toUpperCase()} Promise Resolve. \nUser: ${JSON.stringify(user)}`))
     .catch( err =>  console.log(`${fn.toUpperCase()} Promise Reject. Error: ${err}`))
   })
-}, false)
+}, false);
 
 function $(id) {
-  return document.getElementById(id)
+  return document.getElementById(id);
 }
 
 function updateUserInfo(user) {
-  $("user.fullName").innerHTML = user && user.profile.fullName || 'No signed in user'
-  $("user.email").innerHTML = user && user.profile.email[0] || ''
+  $("user.fullName").innerHTML = user && user.profile.fullName || 'No signed in user';
+  $("user.email").innerHTML = user && user.profile.email[0] || '';
 }

@@ -4,7 +4,7 @@ import AccountClient from '../src/account';
 jest.mock('../src/iframe');
 import Iframe from '../src/iframe';
 
-
+const SESSION = '__r_s_sess_';
 
 beforeEach(() => {
   Iframe.mockClear();
@@ -12,19 +12,20 @@ beforeEach(() => {
 });
 
 test('can create accountClient object', () => {
-  expect(new AccountClient({ app: 'test', baseurl: '/test'})).toBeInstanceOf(AccountClient);
+  expect(new AccountClient({ app: 'test', baseurl: '/test', session: SESSION })).toBeInstanceOf(AccountClient);
 });
 
 
 test('should throw error if missing baseurl or app when creating new accountClient object', () => {
   expect(() => new AccountClient()).toThrow();
-  expect(() => new AccountClient({ baseurl: '/test'})).toThrow();
-  expect(() => new AccountClient({ app: 'test'})).toThrow();
+  expect(() => new AccountClient({ baseurl: '/test' })).toThrow();
+  expect(() => new AccountClient({ app: 'test' })).toThrow();
+  expect(() => new AccountClient({ app: 'test', baseurl: '/test' })).toThrow();
 });
 
 
 test('can set and get prop of accountClient object', () => {
-  const accountClient = new AccountClient({ app: 'test', baseurl: '/test'});
+  const accountClient = new AccountClient({ app: 'test', baseurl: '/test', session: SESSION });
   expect(accountClient.get('app')).toMatch('test');
   expect(accountClient.get('baseurl')).toMatch('/test');
   accountClient.set({ 'app': 'dev'});
@@ -33,11 +34,10 @@ test('can set and get prop of accountClient object', () => {
 
 /* Setup utility for testing authentication API */
 
-const SESSION = '__r_s_sess_' // hard-code should be removed
 
 function getMockAccountInstance(mockData) {
   expect(Iframe).not.toHaveBeenCalled();
-  const accountClient = new AccountClient({ app: 'test', baseurl: 'test' });
+  const accountClient = new AccountClient({ app: 'test', baseurl: 'test', session: SESSION });
   expect(Iframe).toHaveBeenCalledTimes(1);
 
   const mockIframeInstance = Iframe.mock.instances[0];

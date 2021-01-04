@@ -3,9 +3,6 @@
 import { isObject } from './util'
 import Iframe from './iframe'
 
-const SESSION = '__r_s_sess_';
-const TIMEOUT = 30000;
-
 export default class AccountClient {
   constructor(props) {
     this._props = {
@@ -17,6 +14,12 @@ export default class AccountClient {
     }
     if (!this._props.app) {
       throw new Error('missing prop: app');
+    }
+    if (!this._props.session) {
+      throw new Error('missing prop: session');
+    }
+    if (!this._props.timeout) {
+      this._props.timeout = 50000;
     }
     this.iframe = new Iframe({ baseurl: this._props.baseurl });
     this._eventHandlers = {};
@@ -180,7 +183,7 @@ export default class AccountClient {
         done && done("No Web Storage support");
         reject("No Web Storage support");
       }
-      const session = JSON.parse(localStorage.getItem(SESSION));
+      const session = JSON.parse(localStorage.getItem(this.get('session')));
       if (session && session.user && session.token) {
         this.set({ ...session });
         this.emit('authenticated', session.user);
@@ -201,7 +204,7 @@ export default class AccountClient {
       console.error("No Web Storage support");
       return;
     }
-    localStorage.removeItem(SESSION);
+    localStorage.removeItem(this.get('session'));
     return this;
   }
 
@@ -212,7 +215,7 @@ export default class AccountClient {
       console.error("No Web Storage support");
       return;
     }
-    localStorage.setItem(SESSION, JSON.stringify(session));
+    localStorage.setItem(this.get('session'), JSON.stringify(session));
     return this;
   }
 
@@ -222,7 +225,7 @@ export default class AccountClient {
       console.error("No Web Storage support");
       return;
     }
-    return JSON.parse(localStorage.getItem(SESSION));
+    return JSON.parse(localStorage.getItem(this.get('session')));
   }
 
   updateLocalSession(key, data) {
@@ -233,7 +236,7 @@ export default class AccountClient {
   }
 
   _setTimeout(done, reject) {
-    const timeout = this.get('timeout') || TIMEOUT;
+    const timeout = this.get('timeout') || this.get('timeout');
     this._to = setTimeout(() => {
       this.iframe.close();
       done && done('503 Request Timeout. No response from the server', null);
