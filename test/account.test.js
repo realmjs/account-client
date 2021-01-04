@@ -75,9 +75,13 @@ test('can sso successfully and trigger authenticated event when call accountClie
   return testAuthentication('sso', 'authenticated', { status: 200, session: { user: 'tester', token: 'token' } });
 });
 
-test('should reject if sso unsuccessfully', () => {
-  const accountClient = getMockAccountInstance({ status: 401 });
-  return accountClient.sso().catch(err => expect(err).toEqual({ status: 401 }));
+test('can sso successfully and trigger unauthenticated event when call accountClient.sso', () => {
+  return testAuthentication('sso', 'unauthenticated', { status: 404 });
+});
+
+test('should reject error if sso unsuccessfully due to server misconfiguration', () => {
+  const accountClient = getMockAccountInstance();
+  return accountClient.sso().catch(err => expect(err).toMatch('Error'));
 });
 
 /* Test Sign-up */
@@ -86,9 +90,14 @@ test('can sign-up successfully and trigger authenticated event when call account
   return testAuthentication('signup', 'authenticated', { status: 200, session: { user: 'tester', token: 'token' } });
 });
 
-test('should reject if sign-up unsuccessfully', () => {
-  const accountClient = getMockAccountInstance({ status: 401 });
-  return accountClient.signup().catch(err => expect(err).toEqual({ status: 401 }));
+test('should reject falsy if sign-up not receive data', () => {
+  const accountClient = getMockAccountInstance({ code: 'iframe.close' });
+  return accountClient.signup().catch(err => expect(err).toBeFalsy());
+});
+
+test('should reject error if sign-up unsuccessfully due to server misconfiguration', () => {
+  const accountClient = getMockAccountInstance();
+  return accountClient.signup().catch(err => expect(err).toMatch('Error'));
 });
 
 /* test sign-out */

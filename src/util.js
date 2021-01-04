@@ -8,6 +8,9 @@ types.forEach( name => {
   util[`is${name}`] = function (obj) {
     return obj && getClass.call(obj) == `[object ${name}]`;
   };
+  util[`isNot${name}`] = function (obj) {
+    return obj && getClass.call(obj) != `[object ${name}]`;
+  };
 });
 
 module.exports = {...util}

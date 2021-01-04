@@ -1,26 +1,12 @@
 "use strict"
 
-import { isObject } from './util'
+import { isNotObject } from './util'
 import Iframe from './iframe'
 
 export default class AccountClient {
   constructor(props) {
-    this._props = {
-      cookie: false,
-    };
-    this.set(props);
-    if (!this._props.baseurl) {
-      throw new Error('missing prop: baseurl');
-    }
-    if (!this._props.app) {
-      throw new Error('missing prop: app');
-    }
-    if (!this._props.session) {
-      throw new Error('missing prop: session');
-    }
-    if (!this._props.timeout) {
-      this._props.timeout = 50000;
-    }
+    this.validateProps(props);
+    this.initProps(props);
     this.iframe = new Iframe({ baseurl: this._props.baseurl });
     this._eventHandlers = {};
     /* in case these methods are called by an event such as onClick, need to remain 'this' context */
@@ -33,14 +19,36 @@ export default class AccountClient {
   }
 
   set(props) {
-    if (isObject(props)) {
-      for (let p in props) {
-        this._props[p] = props[p];
-      }
-    } else {
+    if (isNotObject(props)) {
       throw new Error('Require props to be an Object');
     }
+    for (let p in props) {
+      this._props[p] = props[p];
+    }
     return this;
+  }
+
+  validateProps(props) {
+    if (!props.baseurl) {
+      throw new Error('missing prop: baseurl');
+    }
+    if (!props.app) {
+      throw new Error('missing prop: app');
+    }
+    if (!props.session) {
+      throw new Error('missing prop: session');
+    }
+  }
+
+  initProps(props) {
+    this._props = {};
+    this.set(props);
+    this.setDefaulProps();
+  }
+
+  setDefaulProps() {
+    if (!this._props.timeout) { this._props.timeout = 50000; }
+    if (!this._props.cookie) { this._props.cookie = false; }
   }
 
   emit(event, ...args) {
@@ -67,28 +75,18 @@ export default class AccountClient {
         query: { app: this.get('app') },
         onLoaded: () => this._clearTimeout(),
         done: (data) => {
-          this.iframe.close();
           if (data && data.status == 200) {
-            if (data.session && data.session.user && data.session.token) {
-              this.setLocalSession(data.session);
-              this.emit('authenticated', data.session.user);
-              done && done(null, data.session.user);
-              resolve(data.session.user);
-              return;
-            }
-            if (data.session === null) {
-              this.signoutLocally();
-              done && done(404, undefined);
-              resolve(undefined);
-              return;
-            }
-          } else if (data && data.status) {
-            done && done(data);
-            reject(data);
+            this.processSignedIn(data, done, resolve);
+          } else if (data && data.status == 404) {
+            // process signout, session should be null
+            this.signoutLocally();
+            done && done(404, undefined);
+            resolve(undefined);
           } else {
-            const error = data;
-            done && done(error);
-            reject(error);
+            // sso required data to be returned either 200 or 404
+            // if reach here, mean wrong in account-server configuration for sso
+            done && done('# Error in SSO: something wrong in account-server configuration');
+            reject('# Error in SSO: something wrong in account-server configuration');
           }
         }
       })
@@ -105,16 +103,14 @@ export default class AccountClient {
         onLoaded: () => this._clearTimeout(),
         done: (data) => {
           if (data && data.status == 200) {
-            this.setLocalSession(data.session);
-            this.emit('authenticated', data.session.user);
-            done && done(null, data.session.user);
-            resolve(data.session.user);
+            this.processSignedIn(data, done, resolve);
+          } else if (data && data.code === 'iframe.close') {
+            done && done(null);
+            reject(false);
           } else {
-            // this case is actually not happen because SignUp Form never returned an error
-            // in fact, error will be display in SignUp form
-            // code here is just for logical thinking
-            done && done(data);
-            reject(data);
+            // if reach here, mean wrong in account-server configuration for sign-up
+            done && done('# Error in SIGN UP: something wrong in account-server configuration');
+            reject('# Error in  SIGN UP: something wrong in account-server configuration');
           }
         }
       })
@@ -131,11 +127,7 @@ export default class AccountClient {
         onLoaded: () => this._clearTimeout(),
         done: (data) => {
           if (data && data.status == 200) {
-            // this.iframe.close()
-            this.setLocalSession(data.session);
-            this.emit('authenticated', data.session.user);
-            done && done(null, data.session.user);
-            resolve(data.session.user);
+            this.processSignedIn(data, done, resolve);
           } else {
             // this case is actually not happen because SignIn Form never returned an error
             // in fact, error will be display in SignIn form
@@ -185,10 +177,7 @@ export default class AccountClient {
       }
       const session = JSON.parse(localStorage.getItem(this.get('session')));
       if (session && session.user && session.token) {
-        this.set({ ...session });
-        this.emit('authenticated', session.user);
-        done && done(null, session.user);
-        resolve(session.user);
+        this.processSignedIn({ session }, done, resolve);
       } else {
         this.emit('unauthenticated');
         done && done(404, undefined);
@@ -233,6 +222,13 @@ export default class AccountClient {
     session[key] = data;
     this.setLocalSession(session);
     return this;
+  }
+
+  processSignedIn(data, done, resolve) {
+    this.setLocalSession(data.session);
+    this.emit('authenticated', data.session.user);
+    done && done(null, data.session.user);
+    resolve(data.session.user);
   }
 
   _setTimeout(done, reject) {
