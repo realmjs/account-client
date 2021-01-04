@@ -6,9 +6,7 @@ iframe test
 
 [x] should throw error if missing baseurl when creating an ifame object
 
-[ ]  can iframe object open an url
-
-[ ]  can close an iframe
+[x] can iframe object open an url
 
 
 account-client
