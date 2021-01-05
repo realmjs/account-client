@@ -14,42 +14,55 @@ export default class Iframe {
     this._onIframeLoaded = null;
     this._iframeClosed = true;
     this._iframe = null;
-    document.addEventListener("DOMContentLoaded", (event) => {
-      this._domReady = true;
-      this._lazyFn.forEach(f => f.fn(...f.args));
-      this._lazyFn = [];
-    }, false)
-    window.addEventListener("message", (event) => {
-      if (event.origin !== this.baseurl)
-        return;
-      const data = event.data;
-      /* iframe loaded */
-      if (data.code === 'iframe.loaded') {
-        if (!this._iframe)
-          return;
-        this._iframe.style['height'] = data.height + 'px';
-        this._iframe.style['width'] = '95%';
-        this._iframe.style['max-width'] = data.width + 'px';
-        this._onIframeLoaded && this._onIframeLoaded();
-        return;
-      }
-      /* iframe close command */
-      if (data.code === 'iframe.close') {
-        this._closeIframe();
-        this._done && this._done(data);
-        return;
-      }
-      /* iframe finish all processing */
-      if (data.code === 'iframe.done') {
-        this._closeIframe();
-        this._done && this._done(data);
-        // execute other iframe.open in queue if any
-        if (this._lazyFn.length > 0) {
-          const f = this._lazyFn.pop();
-          f.fn(...f.args);
-        }
-      }
-    }, false)
+    this.messageHandler = {
+      'iframe.loaded': this.handleIframeMessage('Loaded'),
+      'iframe.close': this.handleIframeMessage('Close'),
+      'iframe.done': this.handleIframeMessage('Done'),
+    };
+
+    document.addEventListener("DOMContentLoaded", this.processAfterDomReady.bind(this), false)
+    window.addEventListener("message", this.processIframeMessage.bind(this), false)
+  }
+
+  processAfterDomReady() {
+    this._domReady = true;
+    this._lazyFn.forEach(f => f.fn(...f.args));
+    this._lazyFn = [];
+  }
+
+  processIframeMessage(event) {
+    if (event.origin !== this.baseurl)
+      return;
+    const data = event.data;
+    this.messageHandler[data.code](data);
+  }
+
+  handleIframeMessage(message) {
+    return this[`handleMessageIframe${message}`].bind(this);
+  }
+
+  handleMessageIframeLoaded(data) {
+    if (!this._iframe)
+      return;
+    this._iframe.style['height'] = data.height + 'px';
+    this._iframe.style['width'] = '95%';
+    this._iframe.style['max-width'] = data.width + 'px';
+    this._onIframeLoaded && this._onIframeLoaded();
+  }
+
+  handleMessageIframeClose(data) {
+    this._closeIframe();
+    this._done && this._done(data);
+  }
+
+  handleMessageIframeDone(data) {
+    this._closeIframe();
+    this._done && this._done(data);
+    // execute other iframe.open in queue if any
+    if (this._lazyFn.length > 0) {
+      const f = this._lazyFn.pop();
+      f.fn(...f.args);
+    }
   }
 
   open({path, query, props, onLoaded, done}) {
