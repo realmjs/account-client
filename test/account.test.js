@@ -64,9 +64,14 @@ test('can sign-in successfully and trigger authenticated event when call account
   return testAuthentication('signin', 'authenticated', { status: 200, session: { user: 'tester' } });
 });
 
-test('should reject if sign-in unsuccessfully', () => {
-  const accountClient = getMockAccountInstance({ status: 401 });
-  return accountClient.signin().catch(err => expect(err).toEqual({ status: 401 }));
+test('should reject falsy if sign-in form is closed', () => {
+  const accountClient = getMockAccountInstance({ code: 'iframe.close' });
+  return accountClient.signin().catch(err => expect(err).toBeFalsy());
+});
+
+test('should reject error if sign-in unsuccessfully due to server misconfiguration', () => {
+  const accountClient = getMockAccountInstance();
+  return accountClient.signin().catch(err => expect(err).toMatch('Error'));
 });
 
 /* Test SSO */
@@ -90,7 +95,7 @@ test('can sign-up successfully and trigger authenticated event when call account
   return testAuthentication('signup', 'authenticated', { status: 200, session: { user: 'tester', token: 'token' } });
 });
 
-test('should reject falsy if sign-up not receive data', () => {
+test('should reject falsy if sign-up form is closed', () => {
   const accountClient = getMockAccountInstance({ code: 'iframe.close' });
   return accountClient.signup().catch(err => expect(err).toBeFalsy());
 });

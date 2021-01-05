@@ -74,23 +74,25 @@ export default class AccountClient {
         path: '/session',
         query: { app: this.get('app') },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => {
-          if (data && data.status == 200) {
-            this.processSignedIn(data, done, resolve);
-          } else if (data && data.status == 404) {
-            // process signout, session should be null
-            this.signoutLocally();
-            done && done(404, undefined);
-            resolve(undefined);
-          } else {
-            // sso required data to be returned either 200 or 404
-            // if reach here, mean wrong in account-server configuration for sso
-            done && done('# Error in SSO: something wrong in account-server configuration');
-            reject('# Error in SSO: something wrong in account-server configuration');
-          }
-        }
+        done: (data) => this.onSSOFormResolved(data, done, resolve, reject),
       })
     })
+  }
+
+  onSSOFormResolved(data, done, resolve, reject) {
+    if (data && data.status == 200) {
+      this.processSignedIn(data, done, resolve);
+    } else if (data && data.status == 404) {
+      // process signout, session should be null
+      this.signoutLocally();
+      done && done(404, undefined);
+      resolve(undefined);
+    } else {
+      // sso required data to be returned either 200 or 404
+      // if reach here, mean wrong in account-server configuration for sso
+      done && done('# Error in SSO: something wrong in account-server configuration');
+      reject('# Error in SSO: something wrong in account-server configuration');
+    }
   }
 
   signup(done) {
@@ -101,18 +103,7 @@ export default class AccountClient {
         query: { name: 'signup', app: this.get('app') },
         props: { display: 'block' },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => {
-          if (data && data.status == 200) {
-            this.processSignedIn(data, done, resolve);
-          } else if (data && data.code === 'iframe.close') {
-            done && done(null);
-            reject(false);
-          } else {
-            // if reach here, mean wrong in account-server configuration for sign-up
-            done && done('# Error in SIGN UP: something wrong in account-server configuration');
-            reject('# Error in  SIGN UP: something wrong in account-server configuration');
-          }
-        }
+        done: (data) => this.onAuthenFormResolved(data, done, resolve, reject, 'SIGN-UP'),
       })
     })
   }
@@ -125,17 +116,7 @@ export default class AccountClient {
         query: { name: 'signin', app: this.get('app'), height: 415 },
         props: { display: 'block' },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => {
-          if (data && data.status == 200) {
-            this.processSignedIn(data, done, resolve);
-          } else {
-            // this case is actually not happen because SignIn Form never returned an error
-            // in fact, error will be display in SignIn form
-            // code here is just for logical thinking
-            done && done(data);
-            reject(data);
-          }
-        }
+        done: (data) => this.onAuthenFormResolved(data, done, resolve, reject, 'SIGN-IN'),
       })
     })
   }
@@ -148,7 +129,6 @@ export default class AccountClient {
         query: { name: 'signout', app: this.get('app') },
         onLoaded: () => this._clearTimeout(),
         done: (data) => {
-          this.iframe.close();
           if (data && data.status == 200) {
             this.signoutLocally();
             done && done(null, undefined);
@@ -160,6 +140,26 @@ export default class AccountClient {
         }
       })
     })
+  }
+
+  processSignedIn(data, done, resolve) {
+    this.setLocalSession(data.session);
+    this.emit('authenticated', data.session.user);
+    done && done(null, data.session.user);
+    resolve(data.session.user);
+  }
+
+  onAuthenFormResolved(data, done, resolve, reject, processName) {
+    if (data && data.status == 200) {
+      this.processSignedIn(data, done, resolve);
+    } else if (data && data.code === 'iframe.close') {
+      done && done(null, false);
+      reject(false);
+    } else {
+      // if reach here, mean wrong in account-server configuration for sign-in
+      done && done(`# Error in ${processName}: something wrong in account-server configuration`);
+      reject(`# Error in ${processName}: something wrong in account-server configuration`);
+    }
   }
 
   signoutLocally() {
@@ -222,13 +222,6 @@ export default class AccountClient {
     session[key] = data;
     this.setLocalSession(session);
     return this;
-  }
-
-  processSignedIn(data, done, resolve) {
-    this.setLocalSession(data.session);
-    this.emit('authenticated', data.session.user);
-    done && done(null, data.session.user);
-    resolve(data.session.user);
   }
 
   _setTimeout(done, reject) {
