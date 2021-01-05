@@ -230,18 +230,4 @@ export default class AccountClient {
     clearTimeout(this._to);
   }
 
-  /* in future, set local cookie may be needed for server-side rendering */
-
-  // _setCookie(cname, cvalue, exdays) {
-  //   let expires = exdays ? `expires=${exdays}` : '';
-  //   document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-  //   return this
-  // }
-
-  // _clearCookie(cname) {
-  //   const expires = 'Thu, 01 Jan 1970 00:00:00 UTC';
-  //   this._setCookie(cname, '', expires)
-  //   return this
-  // }
-
 }
