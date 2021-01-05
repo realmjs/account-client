@@ -111,3 +111,34 @@ test('can signout successfully and trigger unauthenticated event', () => {
   localStorage.setItem(SESSION, 'session');
   return testAuthentication('signout', 'unauthenticated', { status: 200 } );
 });
+
+test('should reject error if sign-out unsuccessfully due to server misconfiguration', () => {
+  const accountClient = getMockAccountInstance();
+  return accountClient.signout().catch(err => expect(err).toMatch('Error'));
+});
+
+/* Special test for case of No Web Storage */
+
+describe('Special test cases for No Web Storage', () => {
+
+  const __Storage = Storage;
+
+  beforeEach(() => Storage = undefined );
+  afterEach(() => window.Storage = __Storage);
+
+  test('can throw error if no web storage when sso', () => {
+    const accountClient = getMockAccountInstance({ status: 404 });
+    return accountClient.sso().catch(err => expect(err).toMatch('No Web Storage support'));
+  });
+
+  test('can throw error if no web storage when signout', () => {
+    const accountClient = getMockAccountInstance({ status: 200 });
+    return accountClient.signout().catch(err => expect(err).toMatch('No Web Storage support'));
+  });
+
+  test('can throw error if no web storage when signin', () => {
+    const accountClient = getMockAccountInstance({ status: 200 });
+    return accountClient.signin().catch(err => expect(err).toMatch('No Web Storage support'));
+  });
+
+});

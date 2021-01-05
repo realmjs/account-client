@@ -81,12 +81,10 @@ export default class AccountClient {
 
   onSSOFormResolved(data, done, resolve, reject) {
     if (data && data.status == 200) {
-      this.processSignedIn(data, done, resolve);
+      this.processSignedIn(data, done, resolve, reject);
     } else if (data && data.status == 404) {
       // process signout, session should be null
-      this.signoutLocally();
-      done && done(404, undefined);
-      resolve(undefined);
+      this.processSigningout(done, resolve, reject);
     } else {
       // sso required data to be returned either 200 or 404
       // if reach here, mean wrong in account-server configuration for sso
@@ -121,37 +119,19 @@ export default class AccountClient {
     })
   }
 
-  signout(done) {
-    return new Promise( (resolve, reject) => {
-      this._setTimeout(done, reject);
-      this.iframe.open({
-        path: '/form',
-        query: { name: 'signout', app: this.get('app') },
-        onLoaded: () => this._clearTimeout(),
-        done: (data) => {
-          if (data && data.status == 200) {
-            this.signoutLocally();
-            done && done(null, undefined);
-            resolve(undefined);
-          } else {
-            done && done(data);
-            reject(data);
-          }
-        }
-      })
+  processSignedIn(data, done, resolve, reject) {
+    this.setLocalSession(data.session)
+    .then(() => {
+      this.emit('authenticated', data.session.user);
+      done && done(null, data.session.user);
+      resolve(data.session.user);
     })
-  }
-
-  processSignedIn(data, done, resolve) {
-    this.setLocalSession(data.session);
-    this.emit('authenticated', data.session.user);
-    done && done(null, data.session.user);
-    resolve(data.session.user);
+    .catch(err => reject(err));
   }
 
   onAuthenFormResolved(data, done, resolve, reject, processName) {
     if (data && data.status == 200) {
-      this.processSignedIn(data, done, resolve);
+      this.processSignedIn(data, done, resolve, reject);
     } else if (data && data.code === 'iframe.close') {
       done && done(null, false);
       reject(false);
@@ -162,10 +142,43 @@ export default class AccountClient {
     }
   }
 
-  signoutLocally() {
-    this.clearLocalSession();
-    this.emit('unauthenticated');
-    return this;
+  signout(done) {
+    return new Promise( (resolve, reject) => {
+      this._setTimeout(done, reject);
+      this.iframe.open({
+        path: '/form',
+        query: { name: 'signout', app: this.get('app') },
+        onLoaded: () => this._clearTimeout(),
+        done: (data) => this.onSignoutFormResolved(data, done, resolve, reject),
+      })
+    })
+  }
+
+  onSignoutFormResolved(data, done, resolve, reject) {
+    if (data && data.status == 200) {
+      this.processSigningout(done, resolve, reject);
+    } else {
+      // if reach here, mean wrong in account-server configuration for signout
+      done && done('# Error in SIGN-OUT: something wrong in account-server configuration');
+      reject('# Error in  SIGN-OUT: something wrong in account-server configuration');
+    }
+  }
+
+  signoutLocally(done) {
+    return new Promise((resolve, reject) => this.processSigningout(done, resolve, reject) );
+  }
+
+  processSigningout(done, resolve, reject) {
+    this.clearLocalSession()
+    .then(() => {
+      this.emit('unauthenticated');
+      done && done(null, undefined);
+      resolve(undefined);
+    })
+    .catch(err => {
+      done && done(err);
+      reject(err);
+    });
   }
 
   signinLocally(done) {
@@ -177,7 +190,7 @@ export default class AccountClient {
       }
       const session = JSON.parse(localStorage.getItem(this.get('session')));
       if (session && session.user && session.token) {
-        this.processSignedIn({ session }, done, resolve);
+        this.processSignedIn({ session }, done, resolve, reject);
       } else {
         this.emit('unauthenticated');
         done && done(404, undefined);
@@ -187,41 +200,21 @@ export default class AccountClient {
   }
 
   clearLocalSession() {
-    this.set({ user: undefined, token: undefined });
-    if (typeof(Storage) === "undefined") {
-      // Sorry! No Web Storage support..
-      console.error("No Web Storage support");
-      return;
-    }
-    localStorage.removeItem(this.get('session'));
-    return this;
+    return new Promise((resolve, reject) => {
+      this.set({ user: undefined, token: undefined });
+      if (typeof(Storage) === "undefined") reject("No Web Storage support");
+      localStorage.removeItem(this.get('session'));
+      resolve();
+    });
   }
 
   setLocalSession(session) {
-    this.set({ ...session });    // {user, token}
-    if (typeof(Storage) === "undefined") {
-      // Sorry! No Web Storage support..
-      console.error("No Web Storage support");
-      return;
-    }
-    localStorage.setItem(this.get('session'), JSON.stringify(session));
-    return this;
-  }
-
-  getLocalSession() {
-    if (typeof(Storage) === "undefined") {
-      // Sorry! No Web Storage support..
-      console.error("No Web Storage support");
-      return;
-    }
-    return JSON.parse(localStorage.getItem(this.get('session')));
-  }
-
-  updateLocalSession(key, data) {
-    const session = this.getLocalSession();
-    session[key] = data;
-    this.setLocalSession(session);
-    return this;
+    return new Promise((resolve, reject) => {
+      this.set({ ...session });    // {user, token}
+      if (typeof(Storage) === "undefined") reject("No Web Storage support");
+      localStorage.setItem(this.get('session'), JSON.stringify(session));
+      resolve();
+    });
   }
 
   _setTimeout(done, reject) {
