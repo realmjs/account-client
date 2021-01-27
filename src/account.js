@@ -147,7 +147,7 @@ export default class AccountClient {
       this._setTimeout(done, reject);
       this.iframe.open({
         path: '/form',
-        query: { name: 'signout', app: this.get('app') },
+        query: { name: 'signout', app: this.get('app'), sid: this.getLocalSession().sid },
         onLoaded: () => this._clearTimeout(),
         done: (data) => this.onSignoutFormResolved(data, done, resolve, reject),
       })
@@ -159,8 +159,8 @@ export default class AccountClient {
       this.processSigningout(done, resolve, reject);
     } else {
       // if reach here, mean wrong in account-server configuration for signout
-      done && done('# Error in SIGN-OUT: something wrong in account-server configuration');
-      reject('# Error in  SIGN-OUT: something wrong in account-server configuration');
+      done && done(`# Error in SIGN-OUT: received ${data && data.status}`);
+      reject(`# Error in SIGN-OUT: received ${data && data.status}`);
     }
   }
 
@@ -215,6 +215,11 @@ export default class AccountClient {
       localStorage.setItem(this.get('session'), JSON.stringify(session));
       resolve();
     });
+  }
+
+  getLocalSession() {
+    if (typeof(Storage) === "undefined") throw Error ("No Web Storage support");
+    return JSON.parse(localStorage.getItem(this.get('session')));
   }
 
   _setTimeout(done, reject) {
