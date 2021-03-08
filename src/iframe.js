@@ -25,7 +25,6 @@ export default class Iframe {
   }
 
   processAfterDomReady() {
-    this._domReady = true;
     this._lazyFn.forEach(f => f.fn(...f.args));
     this._lazyFn = [];
   }
@@ -131,11 +130,15 @@ export default class Iframe {
 
   _lazyExecute(fn, ...args) {
     fn = fn.bind(this);
-    if (this._domReady && this._iframeClosed) {
+    if (this._isDomContentLoaded() && this._iframeClosed) {
       fn(...args);
     } else {
       this._lazyFn.push({fn, args});
     }
+  }
+
+  _isDomContentLoaded() {
+    return document.readyState === "complete" || document.readyState === "loaded";
   }
 
   _constructURL(path, query) {
