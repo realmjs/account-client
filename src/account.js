@@ -66,134 +66,130 @@ export default class AccountClient {
     return this;
   }
 
-  sso(done) {
+  sso(defer) {
     return new Promise( (resolve, reject) => {
       this.emit('authenticating');
-      this._setTimeout(done, reject);
+      this._setTimeout(reject);
       this.iframe.open({
         path: '/session',
         query: { app: this.get('app') },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => this.onSSOFormResolved(data, done, resolve, reject),
+        done: (data) => this.onSSOFormResolved(data, defer, resolve, reject),
       })
     })
   }
 
-  onSSOFormResolved(data, done, resolve, reject) {
+  onSSOFormResolved(data, defer, resolve, reject) {
     if (data && data.status == 200) {
-      this.processSignedIn(data, done, resolve, reject);
+      this.processSignedIn(data, defer, resolve, reject);
     } else if (data && data.status == 404) {
       // process signout, session should be null
-      this.processSigningout(done, resolve, reject);
+      this.processSigningout(defer, resolve, reject);
     } else {
       // sso required data to be returned either 200 or 404
       // if reach here, mean wrong in account-server configuration for sso
-      done && done('# Error in SSO: something wrong in account-server configuration');
       reject('# Error in SSO: something wrong in account-server configuration');
     }
   }
 
-  signup(done) {
+  signup(defer) {
     return new Promise( (resolve, reject) => {
-      this._setTimeout(done, reject);
+      this._setTimeout(reject);
       this.iframe.open({
         path: '/form',
         query: { name: 'signup', app: this.get('app') },
         props: { display: 'block' },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => this.onAuthenFormResolved(data, done, resolve, reject, 'SIGN-UP'),
+        done: (data) => this.onAuthenFormResolved(data, defer, resolve, reject, 'SIGN-UP'),
       })
     })
   }
 
-  signin(done) {
+  signin(defer) {
     return new Promise( (resolve, reject) => {
-      this._setTimeout(done, reject);
+      this._setTimeout(reject);
       this.iframe.open({
         path: '/form',
         query: { name: 'signin', app: this.get('app'), height: 415 },
         props: { display: 'block' },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => this.onAuthenFormResolved(data, done, resolve, reject, 'SIGN-IN'),
+        done: (data) => this.onAuthenFormResolved(data, defer, resolve, reject, 'SIGN-IN'),
       })
     })
   }
 
-  processSignedIn(data, done, resolve, reject) {
+  processSignedIn(data, defer, resolve, reject) {
     this.setLocalSession(data.session)
     .then(() => {
       this.emit('authenticated', data.session.user);
-      done && done(null, data.session.user);
-      resolve(data.session.user);
+      if (defer) {
+        defer(data.session.user).then(() => resolve(data.session.user)).catch(reject);
+      } else {
+        resolve(data.session.user);
+      }
     })
     .catch(err => reject(err));
   }
 
-  onAuthenFormResolved(data, done, resolve, reject, processName) {
+  onAuthenFormResolved(data, defer, resolve, reject, processName) {
     if (data && data.status == 200) {
-      this.processSignedIn(data, done, resolve, reject);
+      this.processSignedIn(data, defer, resolve, reject);
     } else if (data && data.code === 'iframe.close') {
-      done && done(null, false);
       reject(false);
     } else {
       // if reach here, mean wrong in account-server configuration for sign-in
-      done && done(`# Error in ${processName}: something wrong in account-server configuration`);
       reject(`# Error in ${processName}: something wrong in account-server configuration`);
     }
   }
 
-  signout(done) {
+  signout(defer) {
     return new Promise( (resolve, reject) => {
-      this._setTimeout(done, reject);
+      this._setTimeout(reject);
       this.iframe.open({
         path: '/form',
         query: { name: 'signout', app: this.get('app'), sid: this.getLocalSession().sid },
         onLoaded: () => this._clearTimeout(),
-        done: (data) => this.onSignoutFormResolved(data, done, resolve, reject),
+        done: (data) => this.onSignoutFormResolved(data, defer, resolve, reject),
       })
     })
   }
 
-  onSignoutFormResolved(data, done, resolve, reject) {
+  onSignoutFormResolved(data, defer, resolve, reject) {
     if (data && data.status == 200) {
-      this.processSigningout(done, resolve, reject);
+      this.processSigningout(defer, resolve, reject);
     } else {
       // if reach here, mean wrong in account-server configuration for signout
-      done && done(`# Error in SIGN-OUT: received ${data && data.status}`);
       reject(`# Error in SIGN-OUT: received ${data && data.status}`);
     }
   }
 
-  signoutLocally(done) {
-    return new Promise((resolve, reject) => this.processSigningout(done, resolve, reject) );
+  signoutLocally(defer) {
+    return new Promise((resolve, reject) => this.processSigningout(defer, resolve, reject) );
   }
 
-  processSigningout(done, resolve, reject) {
+  processSigningout(defer, resolve, reject) {
     this.clearLocalSession()
     .then(() => {
       this.emit('unauthenticated');
-      done && done(null, undefined);
-      resolve(undefined);
+      if (defer) {
+        defer(undefined).then(() => resolve(undefined)).catch(reject);
+      } else {
+        resolve(undefined);
+      }
     })
-    .catch(err => {
-      done && done(err);
-      reject(err);
-    });
+    .catch(reject);
   }
 
-  signinLocally(done) {
+  signinLocally(defer) {
     return new Promise( (resolve, reject) => {
       if (typeof(Storage) === "undefined") {
-        // Sorry! No Web Storage support..
-        done && done("No Web Storage support");
         reject("No Web Storage support");
       }
       const session = JSON.parse(localStorage.getItem(this.get('session')));
       if (session && session.user && session.token) {
-        this.processSignedIn({ session }, done, resolve, reject);
+        this.processSignedIn({ session }, defer, resolve, reject);
       } else {
         this.emit('unauthenticated');
-        done && done(404, undefined);
         resolve(undefined);
       }
     })
@@ -211,7 +207,9 @@ export default class AccountClient {
   setLocalSession(session) {
     return new Promise((resolve, reject) => {
       this.set({ ...session });    // {user, token}
-      if (typeof(Storage) === "undefined") reject("No Web Storage support");
+      if (typeof(Storage) === "undefined") {
+        reject("No Web Storage support");
+      }
       localStorage.setItem(this.get('session'), JSON.stringify(session));
       resolve();
     });
@@ -222,11 +220,10 @@ export default class AccountClient {
     return JSON.parse(localStorage.getItem(this.get('session')));
   }
 
-  _setTimeout(done, reject) {
+  _setTimeout(reject) {
     const timeout = this.get('timeout') || this.get('timeout');
     this._to = setTimeout(() => {
       this.iframe.close();
-      done && done('503 Request Timeout. No response from the server', null);
       reject && reject('503 Request Timeout. No response from the server');
     }, timeout);
   }
