@@ -10,7 +10,7 @@ export default class Iframe {
     const { baseurl } = props;
     this.baseurl = baseurl.replace(/\/+$/,'');
     this._lazyFn = [];
-    this._onIframeFinish = null;
+    this._done = null;
     this._onIframeLoaded = null;
     this._iframeClosed = true;
     this._iframe = null;
@@ -49,13 +49,14 @@ export default class Iframe {
     this._onIframeLoaded && this._onIframeLoaded();
   }
 
-  handleMessageIframeClose() {
+  handleMessageIframeClose(data) {
     this._closeIframe();
+    this._done && this._done(data);
   }
 
   handleMessageIframeDone(data) {
     this._closeIframe();
-    this._onIframeFinish && this._onIframeFinish(data);
+    this._done && this._done(data);
     // execute other iframe.open in queue if any
     if (this._lazyFn.length > 0) {
       const f = this._lazyFn.pop();
@@ -69,7 +70,7 @@ export default class Iframe {
       //console.log(`GET ${url} HTTP / 1.1`)
       this._openIframe(url, props);
       this._onIframeLoaded = onLoaded;
-      this._onIframeFinish = done;
+      this._done = done;
     }, {path, query, props, done})
   }
 
