@@ -1,5 +1,7 @@
 "use strict"
 
+import endpoint from '@realmjs/account-endpoint'
+
 import { isNotObject } from './util'
 import Iframe from './iframe'
 
@@ -53,7 +55,7 @@ export default class AccountClient {
     return new Promise( (resolve, reject) => {
       this._setRejectTimeout(reject)
       this.iframe.open({
-        path: '/form/signup/email',
+        path: endpoint.Form.Signup,
         query: { a: this.get('app') },
         props: { display: 'block' },
         onLoaded: () => this._clearRejectTimeout(),
