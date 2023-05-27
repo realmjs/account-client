@@ -51,7 +51,7 @@ export default class AccountClient {
     return this.props[prop]
   }
 
-  signup(defer) {
+  signup() {
     return new Promise( (resolve, reject) => {
       this._setRejectTimeout(reject)
       this.iframe.open({
@@ -60,7 +60,21 @@ export default class AccountClient {
         props: { display: 'block' },
         onLoaded: () => this._clearRejectTimeout(),
         onClose: resolve,
-        onFinish: resolve,  // later resolve and invoke signin
+        onFinish: resolve,
+      })
+    })
+  }
+
+  signin() {
+    return new Promise( (resolve, reject) => {
+      this._setRejectTimeout(reject)
+      this.iframe.open({
+        path: endpoint.Form.Signin,
+        query: { a: this.get('app') },
+        props: { display: 'block' },
+        onLoaded: () => this._clearRejectTimeout(),
+        onClose: resolve,
+        onFinish: resolve,
       })
     })
   }
