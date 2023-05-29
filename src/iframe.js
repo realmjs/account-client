@@ -32,8 +32,8 @@ export default class Iframe {
   processIframeMessage(event) {
     if (event.origin !== this.baseurl)
       return;
-    const data = event.data;
-    this.messageHandler[data.code](data);
+    const {code, ...data} = event.data;
+    this.messageHandler[code](data);
   }
 
   handleIframeMessage(message) {
@@ -63,14 +63,13 @@ export default class Iframe {
     }
   }
 
-  open({path, query, props, onLoaded, done}) {
-    this._lazyExecute(function({path, query, props, done}) {
+  open({path, query, props, onLoaded, onClose, onFinish}) {
+    this._lazyExecute(function({path, query, props, onClose, onFinish}) {
       const url = this._constructURL(path, query);
-      //console.log(`GET ${url} HTTP / 1.1`)
       this._openIframe(url, props);
       this._onIframeLoaded = onLoaded;
-      this._onIframeFinish = done;
-    }, {path, query, props, done})
+      this._onIframeFinish = onFinish;
+    }, {path, query, props, onClose, onFinish})
   }
 
   close() {

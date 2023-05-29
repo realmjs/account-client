@@ -8,6 +8,10 @@ import Iframe from './iframe'
 export default class AccountClient {
 
   props = {}
+  events = {
+    'authenticated': [],
+    'unauthenticated': [],
+  }
 
   constructor(props) {
     this.validateProps(props)
@@ -51,6 +55,35 @@ export default class AccountClient {
     return this.props[prop]
   }
 
+  on(eventName, eventHandler) {
+    if (this.events[eventName]) {
+      this.events[eventName].push(eventHandler)
+    } else {
+      console.warn(`No support event ${eventName}`)
+    }
+    return this
+  }
+
+  off(eventName, eventHandler) {
+    if (eventHandler) {
+      if (this.events[eventName]) {
+        const index = this.events[eventName].findIndex(handler => handler === eventHandler)
+        (index != -1) && this.events[eventName].splice(index, 1)
+      }
+    } else {
+      this.events[eventName] = []
+    }
+    return this
+  }
+
+  emit(eventName, ...args) {
+    if (this.events[eventName]) {
+      this.events[eventName].forEach(handler => handler.call(this, ...args));
+    }
+    return this;
+  }
+
+
   signup() {
     return new Promise( (resolve, reject) => {
       this._setRejectTimeout(reject)
@@ -74,7 +107,12 @@ export default class AccountClient {
         props: { display: 'block' },
         onLoaded: () => this._clearRejectTimeout(),
         onClose: resolve,
-        onFinish: resolve,
+        onFinish: (session) => {
+          this.set({ ...session })
+          localStorage && localStorage.setItem(this.get('session'), JSON.stringify(session))
+          this.emit('authenticated', session)
+          resolve(session)
+        },
       })
     })
   }
