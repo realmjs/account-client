@@ -134,6 +134,29 @@ export default class AccountClient {
     })
   }
 
+  sso() {
+    return new Promise( (resolve, reject) => {
+      this._setRejectTimeout(reject)
+      this.iframe.open({
+        path: endpoint.SSO,
+        query: { a: this.get('app') },
+        props: { display: 'block' },
+        onLoaded: () => this._clearRejectTimeout(),
+        onFinish: (session) => {
+          if (session.error) {
+            this.emit('unauthenticated')
+            reject(session.error)
+          } else if (session.user && session.token && session.sid) {
+            this.set({ ...session })
+            localStorage && localStorage.setItem(this.get('session'), JSON.stringify(session))
+            this.emit('authenticated', session)
+            resolve(session)
+          }
+        },
+      })
+    })
+  }
+
   _setRejectTimeout(reject) {
     const timeout = this.get('timeout')
     this.to = setTimeout(() => {
