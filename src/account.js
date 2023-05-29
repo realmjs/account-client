@@ -117,7 +117,24 @@ export default class AccountClient {
     })
   }
 
-  _setRejectTimeout(callback) {
+  signout() {
+    return new Promise( (resolve, reject) => {
+      this._setRejectTimeout(reject)
+      this.iframe.open({
+        path: endpoint.Form.Signout,
+        query: { a: this.get('app'), s: this.get('sid') },
+        onLoaded: () => this._clearRejectTimeout(),
+        onFinish: () => {
+          this.set({ user: undefined, token: undefined, sid: undefined })
+          localStorage && localStorage.removeItem(this.get('session'))
+          this.emit('unauthenticated')
+          resolve()
+        },
+      })
+    })
+  }
+
+  _setRejectTimeout(reject) {
     const timeout = this.get('timeout')
     this.to = setTimeout(() => {
       this.iframe.close()
