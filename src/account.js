@@ -157,6 +157,24 @@ export default class AccountClient {
     })
   }
 
+  changePassword() {
+    return new Promise( (resolve, reject) => {
+      if (!this.get('token')) {
+        reject(new Error('Need to signed before change password'))
+        return
+      }
+      this._setRejectTimeout(reject)
+      this.iframe.open({
+        path: endpoint.Form.ChangePassword,
+        query: { a: this.get('app'), t: this.get('token') },
+        props: { display: 'block' },
+        onLoaded: () => this._clearRejectTimeout(),
+        onClose: resolve,
+        onFinish: resolve,
+      })
+    })
+  }
+
   _setRejectTimeout(reject) {
     const timeout = this.get('timeout')
     this.to = setTimeout(() => {
