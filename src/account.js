@@ -160,7 +160,7 @@ export default class AccountClient {
   changePassword() {
     return new Promise( (resolve, reject) => {
       if (!this.get('token')) {
-        reject(new Error('Need to signed before change password'))
+        reject(new Error('Need to sign in before change password'))
         return
       }
       this._setRejectTimeout(reject)
