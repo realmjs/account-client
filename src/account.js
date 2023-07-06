@@ -143,9 +143,9 @@ export default class AccountClient {
         props: { display: 'block' },
         onLoaded: () => this._clearRejectTimeout(),
         onFinish: (session) => {
-          if (session.error) {
+          if (session.code && session.code === 404) {
             this.emit('unauthenticated')
-            reject(session.error)
+            resolve(undefined)
           } else if (session.user && session.token && session.sid) {
             this.set({ ...session })
             localStorage && localStorage.setItem(this.get('session'), JSON.stringify(session))
