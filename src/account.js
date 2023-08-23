@@ -178,6 +178,20 @@ export default class AccountClient {
     })
   }
 
+  query(uid) {
+    return new Promise( (resolve, reject) => {
+      this._setRejectTimeout(reject)
+      this.iframe.open({
+        path: endpoint.Form.QueryAccount,
+        query: { a: this.get('app'), u: uid },
+        props: { display: 'block' },
+        onLoaded: () => this._clearRejectTimeout(),
+        onClose: resolve,
+        onFinish: resolve,
+      })
+    })
+  }
+
   _setRejectTimeout(reject) {
     const timeout = this.get('timeout')
     this.to = setTimeout(() => {

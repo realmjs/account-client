@@ -1,6 +1,6 @@
 {
   "name": "@realmjs/account-client",
-  "version": "1.4.2",
+  "version": "1.4.4",
   "description": "Client side scripts to authenticate with @realmjs/account-restapi",
   "main": "dist/account.js",
   "scripts": {
@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/realmjs/account-client#readme",
   "dependencies": {
-    "@realmjs/account-endpoint": "^1.1.0",
+    "@realmjs/account-endpoint": "^1.2.2",
     "@realmjs/xhttp-request": "^1.3.2"
   },
   "devDependencies": {
