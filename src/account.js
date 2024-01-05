@@ -19,8 +19,8 @@ export default class AccountClient {
     this.iframe = new Iframe({ baseurl: this.props.baseurl })
     this._eventHandlers = {}
     /* in case these methods are called by an event such as onClick, need to remain 'this' context */
-    const fn = ['signup']
-    fn.forEach(method => this[method] = this[method].bind(this))
+    // const fn = ['signup']
+    // fn.forEach(method => this[method] = this[method].bind(this))
   }
 
   validateProps(props) {
@@ -122,10 +122,10 @@ export default class AccountClient {
       this._setRejectTimeout(reject)
       this.iframe.open({
         path: endpoint.Form.Signout,
-        query: { a: this.get('app'), s: this.get('sid') },
+        query: { a: this.get('app'), t: this.get('token') },
         onLoaded: () => this._clearRejectTimeout(),
         onFinish: () => {
-          this.set({ user: undefined, token: undefined, sid: undefined })
+          this.set({ user: undefined, token: undefined })
           localStorage && localStorage.removeItem(this.get('session'))
           this.emit('unauthenticated')
           resolve()
