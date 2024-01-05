@@ -146,7 +146,7 @@ export default class AccountClient {
           if (session.error && session.error === 404) {
             this.emit('unauthenticated')
             resolve(undefined)
-          } else if (session.user && session.token && session.sid) {
+          } else if (session.user && session.token) {
             this.set({ ...session })
             localStorage && localStorage.setItem(this.get('session'), JSON.stringify(session))
             this.emit('authenticated', session)
