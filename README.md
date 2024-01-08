@@ -1,4 +1,4 @@
-# AccountClient
+# @realmjs/account-client
 
 **A JavaScript library for handling authentication with a remote server compatible with @ralmjs/account-restapi**
 
