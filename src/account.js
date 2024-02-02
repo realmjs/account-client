@@ -139,7 +139,7 @@ export default class AccountClient {
       const session = JSON.parse(localStorage.getItem(this.get('session')));
       if (session?.user && session?.token) {
         this.set({ ...session })
-        this.emit('authenticated', session)
+        setTimeout(() => this.emit('authenticated', session), 0); // emit at next event loop
         resolve(session)
       } else {
         this._setRejectTimeout(reject)
