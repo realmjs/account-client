@@ -136,27 +136,34 @@ export default class AccountClient {
 
   sso() {
     return new Promise( (resolve, reject) => {
-      this._setRejectTimeout(reject)
-      this.iframe.open({
-        path: endpoint.SSO,
-        query: { a: this.get('app') },
-        props: { display: 'block' },
-        onLoaded: () => this._clearRejectTimeout(),
-        onFinish: (session) => {
-          if (session.error && session.error === 404) {
-            this.emit('unauthenticated')
-            resolve(undefined)
-          } else if (session.user && session.token) {
-            this.set({ ...session })
-            localStorage && localStorage.setItem(this.get('session'), JSON.stringify(session))
-            this.emit('authenticated', session)
-            resolve(session)
-          } else {
-            this.emit('unauthenticated')
-            reject(session)
-          }
-        },
-      })
+      const session = JSON.parse(localStorage.getItem(this.get('session')));
+      if (session?.user && session?.token) {
+        this.set({ ...session })
+        this.emit('authenticated', session)
+        resolve(session)
+      } else {
+        this._setRejectTimeout(reject)
+        this.iframe.open({
+          path: endpoint.SSO,
+          query: { a: this.get('app') },
+          props: { display: 'block' },
+          onLoaded: () => this._clearRejectTimeout(),
+          onFinish: (session) => {
+            if (session.error && session.error === 404) {
+              this.emit('unauthenticated')
+              resolve(undefined)
+            } else if (session.user && session.token) {
+              this.set({ ...session })
+              localStorage && localStorage.setItem(this.get('session'), JSON.stringify(session))
+              this.emit('authenticated', session)
+              resolve(session)
+            } else {
+              this.emit('unauthenticated')
+              reject(session)
+            }
+          },
+        })
+      }
     })
   }
 
